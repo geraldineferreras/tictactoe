@@ -1,103 +1,133 @@
-import Image from "next/image";
+"use client";
+import React, { useState, useEffect, useRef } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { GameBoard } from "./components/GameBoard";
+import { Status } from "./components/Status";
+import { ResetButton } from "./components/ResetButton";
+import { MoveHistory } from "./components/MoveHistory";
+import { ThemeToggle } from "./components/ThemeToggle";
+import { calculateWinner, getWinningLine, isDraw } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { OpeningScreen } from "./components/OpeningScreen";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [showOpening, setShowOpening] = useState(true);
+  const [history, setHistory] = useState([
+    { squares: Array(9).fill(null) as (string | null)[] },
+  ]);
+  const [stepNumber, setStepNumber] = useState(0);
+  const [xIsNext, setXIsNext] = useState(true);
+  const [score, setScore] = useState<Record<string, number>>({ X: 0, O: 0, Draw: 0 });
+  const bgMusicRef = useRef<HTMLAudioElement>(null);
+  const moveSoundRef = useRef<HTMLAudioElement>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const current = history[stepNumber];
+  const winner = calculateWinner(current.squares);
+  const winningLine = getWinningLine(current.squares);
+  const draw = !winner && isDraw(current.squares);
+
+  // Update scoreboard on win/draw
+  function handleWinOrDraw() {
+    if (winner && stepNumber === history.length - 1) {
+      setScore((prev) => ({ ...prev, [winner]: prev[winner] + 1 }));
+    } else if (draw && stepNumber === history.length - 1) {
+      setScore((prev) => ({ ...prev, Draw: prev.Draw + 1 }));
+    }
+  }
+  // Only update on new win/draw
+  useEffect(handleWinOrDraw, [winner, draw, stepNumber]);
+
+  useEffect(() => {
+    if (!showOpening && bgMusicRef.current) {
+      bgMusicRef.current.currentTime = 0;
+      bgMusicRef.current.muted = false;
+      bgMusicRef.current.volume = 1;
+      bgMusicRef.current.loop = true;
+      bgMusicRef.current.play().catch(() => {});
+    }
+    return () => {
+      if (bgMusicRef.current) {
+        bgMusicRef.current.pause();
+      }
+    };
+  }, [showOpening]);
+
+  function handleClick(i: number) {
+    const slicedHistory = history.slice(0, stepNumber + 1);
+    const squares = current.squares.slice();
+    if (winner || squares[i]) return;
+    squares[i] = xIsNext ? "X" : "O";
+    setHistory([...slicedHistory, { squares }]);
+    setStepNumber(slicedHistory.length);
+    setXIsNext(!xIsNext);
+    // Play move sound
+    if (moveSoundRef.current) {
+      moveSoundRef.current.currentTime = 0;
+      moveSoundRef.current.muted = false;
+      moveSoundRef.current.volume = 1;
+      moveSoundRef.current.play().catch(() => {});
+    }
+  }
+
+  function jumpTo(step: number) {
+    setStepNumber(step);
+    setXIsNext(step % 2 === 0);
+  }
+
+  function handleReset() {
+    setHistory([{ squares: Array(9).fill(null) }]);
+    setStepNumber(0);
+    setXIsNext(true);
+  }
+
+  if (showOpening) {
+    return <OpeningScreen onStart={() => setShowOpening(false)} />;
+  }
+
+  return (
+    <div className="flex flex-col min-h-screen min-w-full items-center justify-center bg-background px-2 overflow-hidden">
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
+      <motion.div
+        initial={{ opacity: 0, y: -40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="flex flex-col items-center w-full max-w-6xl"
+      >
+        <h1 className="font-title text-5xl sm:text-6xl text-[#181c2f] drop-shadow-lg tracking-widest text-center mb-2">
+          TIC-TAC-TOE <span className="text-[var(--color-x)]">GAME</span>
+        </h1>
+        <div className="uppercase text-[var(--color-x)] text-sm font-bold tracking-widest mb-6 text-center">
+          
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+        <div className="flex flex-col md:flex-row items-center justify-center w-full gap-12">
+          <div className="flex flex-col items-center justify-center">
+            <Status winner={winner} xIsNext={xIsNext} draw={draw} />
+            <GameBoard
+              squares={current.squares}
+              onClick={handleClick}
+              winningLine={winningLine}
+              disabled={!!winner || draw}
+            />
+            <ResetButton onClick={handleReset} disabled={stepNumber === 0 && !winner && !draw} />
+          </div>
+          <div className="flex flex-col items-center w-full max-w-xs mt-4 md:mt-0">
+            <div className="flex justify-between w-full text-lg font-bold mb-3 gap-2">
+              <span className="text-[var(--color-x)]">X Wins: {score.X}</span>
+              <span className="text-[var(--color-o)]">O Wins: {score.O}</span>
+              <span className="text-primary">Draws: {score.Draw}</span>
+            </div>
+            <MoveHistory history={history} stepNumber={stepNumber} jumpTo={jumpTo} />
+          </div>
+        </div>
+      </motion.div>
+      <footer className="mt-2 text-xs text-muted-foreground text-center">
+        Built with Next.js, React 19, Tailwind, ShadCN UI, and ❤️
       </footer>
+      <audio ref={bgMusicRef} src="/sound-play.mp3" preload="auto" />
+      <audio ref={moveSoundRef} src="/movement.mp3" preload="auto" />
     </div>
   );
 }
