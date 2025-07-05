@@ -1,7 +1,5 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { GameBoard } from "./components/GameBoard";
 import { Status } from "./components/Status";
 import { ResetButton } from "./components/ResetButton";
@@ -36,19 +34,20 @@ export default function Home() {
     }
   }
   // Only update on new win/draw
-  useEffect(handleWinOrDraw, [winner, draw, stepNumber]);
+  useEffect(handleWinOrDraw, [winner, draw, stepNumber, history.length]);
 
   useEffect(() => {
-    if (!showOpening && bgMusicRef.current) {
-      bgMusicRef.current.currentTime = 0;
-      bgMusicRef.current.muted = false;
-      bgMusicRef.current.volume = 1;
-      bgMusicRef.current.loop = true;
-      bgMusicRef.current.play().catch(() => {});
+    const bgMusic = bgMusicRef.current;
+    if (!showOpening && bgMusic) {
+      bgMusic.currentTime = 0;
+      bgMusic.muted = false;
+      bgMusic.volume = 1;
+      bgMusic.loop = true;
+      bgMusic.play().catch(() => {});
     }
     return () => {
-      if (bgMusicRef.current) {
-        bgMusicRef.current.pause();
+      if (bgMusic) {
+        bgMusic.pause();
       }
     };
   }, [showOpening]);

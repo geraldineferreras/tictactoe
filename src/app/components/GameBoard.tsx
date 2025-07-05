@@ -1,6 +1,5 @@
 "use client";
 import { Square } from "./Square";
-import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 interface GameBoardProps {
