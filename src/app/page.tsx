@@ -95,7 +95,7 @@ export default function Home() {
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="flex flex-col items-center w-full max-w-6xl"
       >
-        <h1 className="font-title text-5xl sm:text-6xl text-[#181c2f] drop-shadow-lg tracking-widest text-center mb-2">
+        <h1 className="font-title text-5xl sm:text-6xl text-[#181c2f] dark:text-white drop-shadow-lg tracking-widest text-center mb-2">
           TIC-TAC-TOE <span className="text-[var(--color-x)]">GAME</span>
         </h1>
         <div className="uppercase text-[var(--color-x)] text-sm font-bold tracking-widest mb-6 text-center">
@@ -114,9 +114,9 @@ export default function Home() {
           </div>
           <div className="flex flex-col items-center w-full max-w-xs mt-4 md:mt-0">
             <div className="flex justify-between w-full text-lg font-bold mb-3 gap-2">
-              <span className="text-[var(--color-x)]">X Wins: {score.X}</span>
-              <span className="text-[var(--color-o)]">O Wins: {score.O}</span>
-              <span className="text-primary">Draws: {score.Draw}</span>
+              <span className="text-[var(--color-x)] dark:text-yellow-300">X Wins: {score.X}</span>
+              <span className="text-[var(--color-o)] dark:text-purple-300">O Wins: {score.O}</span>
+              <span className="text-primary dark:text-gray-100">Draws: {score.Draw}</span>
             </div>
             <MoveHistory history={history} stepNumber={stepNumber} jumpTo={jumpTo} />
           </div>
