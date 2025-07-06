@@ -1,6 +1,6 @@
 "use client";
 import { Square } from "./Square";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 
 interface GameBoardProps {
   squares: (string | null)[];
@@ -19,9 +19,13 @@ const containerVariants = {
   },
 };
 
-const squareVariants = {
+const squareVariants: Variants = {
   hidden: { scale: 0.7, opacity: 0 },
-  visible: { scale: 1, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 20 } },
+  visible: {
+    scale: 1,
+    opacity: 1,
+    transition: { type: "spring" as const, stiffness: 300, damping: 20 },
+  },
 };
 
 export function GameBoard({ squares, onClick, winningLine, disabled }: GameBoardProps) {
